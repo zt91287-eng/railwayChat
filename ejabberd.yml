@@ -1,0 +1,214 @@
+###
+###           Ejabberd — configuración para Railway
+###           App de llamadas WebRTC + XMPP
+###
+
+hosts:
+  - "localhost"  # Se sobreescribe en runtime con EJABBERD_DOMAIN
+
+loglevel: info
+
+###
+### TLS — Railway maneja el TLS externo,
+### conexión interna sin cifrado forzado
+###
+define_macro:
+  TLS_OPTIONS:
+    - "no_sslv3"
+    - "no_tlsv1"
+    - "no_tlsv1_1"
+    - "cipher_server_preference"
+    - "no_compression"
+
+###
+### Puertos de escucha
+###
+listen:
+  ## Clientes XMPP (tu app Android/iOS)
+  -
+    port: 5222
+    ip: "::"
+    module: ejabberd_c2s
+    max_stanza_size: 262144
+    shaper: c2s_shaper
+    access: c2s
+    starttls: false
+    starttls_required: false
+
+  ## Comunicación servidor a servidor
+  -
+    port: 5269
+    ip: "::"
+    module: ejabberd_s2s_in
+    max_stanza_size: 524288
+
+  ## Panel admin + API HTTP
+  -
+    port: 5280
+    ip: "::"
+    module: ejabberd_http
+    request_handlers:
+      /admin: ejabberd_web_admin
+      /api: mod_http_api
+      /bosh: mod_bosh         # por si acaso se necesita BOSH
+
+###
+### Autenticación
+###
+auth_method: internal
+auth_password_format: scram
+
+###
+### ACLs
+###
+acl:
+  admin:
+    user: admin@localhost
+  local:
+    user_regexp: ""
+  loopback:
+    ip:
+      - 127.0.0.0/8
+      - ::1/128
+
+###
+### Reglas de acceso
+###
+access_rules:
+  local:
+    allow: local
+  c2s:
+    deny: blocked
+    allow: all
+  announce:
+    allow: admin
+  configure:
+    allow: admin
+  pubsub_createnode:
+    allow: local
+  register:
+    allow: all       # ✅ registro abierto desde la app
+  trusted_network:
+    allow: loopback
+
+api_permissions:
+  "console commands":
+    from: ejabberd_ctl
+    who: all
+    what: "*"
+  "admin access":
+    who:
+      access:
+        allow:
+          acl: loopback
+          acl: admin
+    what:
+      - "*"
+      - "!stop"
+      - "!start"
+
+###
+### Shapers (límites de tráfico)
+###
+shaper:
+  normal:
+    rate: 3000
+    burst_size: 20000
+  fast: 100000
+
+shaper_rules:
+  max_user_sessions: 10
+  max_user_offline_messages:
+    5000: admin
+    100: all
+  c2s_shaper:
+    none: admin
+    normal: all
+  s2s_shaper: fast
+
+###
+### Módulos activos
+###
+modules:
+  mod_adhoc: {}
+
+  mod_announce:
+    access: announce
+
+  mod_caps: {}
+
+  mod_carboncopy: {}      # mensajes en múltiples dispositivos
+
+  mod_client_state: {}
+
+  mod_configure: {}
+
+  mod_disco: {}
+
+  mod_fail2ban: {}        # protección básica contra fuerza bruta
+
+  mod_last: {}
+
+  mod_mam:                # historial de mensajes (XEP-0313)
+    assume_mam_usage: true
+    default: always
+    request_activates_archiving: false
+
+  mod_muc:                # salas de chat (XEP-0045)
+    host: conference.@HOST@
+    access:
+      - allow
+    access_admin:
+      - allow: admin
+    access_create: local
+    access_persistent: local
+    default_room_options:
+      persistent: true
+      public: false
+
+  mod_ping:               # keepalive de conexión
+    send_pings: true
+    ping_interval: 60
+    timeout_action: kill
+
+  mod_privacy: {}
+
+  mod_private: {}
+
+  mod_pubsub:
+    access_createnode: pubsub_createnode
+    ignore_pep_from_offline: true
+    last_item_cache: false
+    plugins:
+      - flat
+      - pep
+    force_node_config:
+      "eu.siacs.conversations.axolotl.*":
+        access_model: open
+      "storage:bookmarks":
+        access_model: whitelist
+
+  mod_register:           # ✅ registro in-band XEP-0077
+    access: register
+    ip_access: all
+    welcome_message:
+      subject: "Bienvenido"
+      body: "Tu cuenta ha sido creada correctamente."
+
+  mod_roster:
+    versioning: true
+
+  mod_s2s_dialback: {}
+
+  mod_shared_roster: {}
+
+  mod_stream_mgmt:        # reconexión automática (XEP-0198)
+    resend_on_timeout: if_offline
+
+  mod_vcard:
+    search: false
+
+  mod_vcard_xupdate: {}
+
+  mod_version:
+    show_os: false

@@ -1,0 +1,17 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Railway expone el puerto 5222 (TCP) para XMPP
+# y 5280 (HTTP) para el panel admin
+[[services.ports]]
+port = 5222
+protocol = "tcp"
+
+[[services.ports]]
+port = 5280
+protocol = "tcp"
