@@ -5,7 +5,9 @@ COPY ejabberd.yml /home/ejabberd/conf/ejabberd.yml
 COPY entrypoint.sh /entrypoint.sh
 
 USER root
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+    && chown ejabberd:ejabberd /home/ejabberd/conf/ejabberd.yml \
+    && chmod 644 /home/ejabberd/conf/ejabberd.yml
 
 USER ejabberd
 

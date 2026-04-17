@@ -11,7 +11,13 @@ CONF="/home/ejabberd/conf/ejabberd.yml"
 
 # ── Dominio ────────────────────────────────────────────────────────────────
 DOMAIN="${EJABBERD_DOMAIN:-localhost}"
-sed -i "s/- \"localhost\"/- \"${DOMAIN}\"/" "$CONF"
+
+# Usar archivo temporal en /tmp para evitar problemas de permisos con sed -i
+TMP_CONF="$(mktemp /tmp/ejabberd.yml.XXXXXX)"
+sed "s/- \"localhost\"/- \"${DOMAIN}\"/" "$CONF" > "$TMP_CONF"
+cp "$TMP_CONF" "$CONF"
+rm -f "$TMP_CONF"
+
 echo "[entrypoint] EJABBERD_DOMAIN = ${DOMAIN}"
 
 # ── Arrancar ejabberd en primer plano ──────────────────────────────────────
