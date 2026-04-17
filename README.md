@@ -1,46 +1,57 @@
 # Ejabberd en Railway — Servidor XMPP para WebRTC
 
-Servidor XMPP ligero para pruebas de la app de llamadas/videollamadas con WebRTC.
+Servidor XMPP para pruebas de la app de llamadas/videollamadas con WebRTC.
 
 ## Estructura
 
 ```
 ejabberd-railway/
-├── Dockerfile        # imagen basada en ejabberd/ecs:24.02
+├── Dockerfile        # imagen ejabberd/ecs:24.02
 ├── ejabberd.yml      # configuración del servidor
-├── entrypoint.sh     # inyecta variables de entorno al arrancar
-├── railway.toml      # configuración de despliegue en Railway
+├── railway.toml      # configuración de despliegue
 └── README.md
 ```
 
+---
+
 ## Despliegue en Railway
 
-### 1. Crear proyecto en Railway
+### 1. Crear proyecto
 1. Ve a [railway.app](https://railway.app) y entra con GitHub
-2. Click **New Project → Deploy from GitHub repo**
+2. **New Project → Deploy from GitHub repo**
 3. Selecciona este repositorio
 
-### 2. Configurar variables de entorno
-En Railway ve a **Variables** y agrega:
+### 2. Variables de entorno
+En Railway → pestaña **Variables**, agrega estas 3 variables:
 
-| Variable                | Valor de ejemplo          | Descripción                        |
-|-------------------------|---------------------------|------------------------------------|
-| `EJABBERD_DOMAIN`       | `tuapp.up.railway.app`    | Dominio público que Railway asigna |
-| `EJABBERD_ADMIN_USER`   | `admin`                   | Usuario administrador              |
-| `EJABBERD_ADMIN_PASSWORD` | `TuPasswordSegura123`   | Contraseña del admin               |
+| Variable        | Ejemplo                                               | Descripción                              |
+|-----------------|-------------------------------------------------------|------------------------------------------|
+| `XMPP_DOMAIN`   | `maglev.proxy.rlwy.net`                               | Tu host TCP asignado por Railway         |
+| `CTL_ON_CREATE` | `register admin maglev.proxy.rlwy.net TuPass123`      | Crea el admin la primera vez que arranca |
+| `CTL_ON_START`  | `status`                                              | Verifica que arrancó correctamente       |
+
+> ⚠️ `CTL_ON_CREATE` solo se ejecuta **la primera vez**.
+> Reemplaza `maglev.proxy.rlwy.net` y `TuPass123` con tus valores reales.
 
 ### 3. Exponer puerto TCP 5222
-En Railway:
-- Ve a **Settings → Networking**
-- Click **Add Port** → escribe `5222` → protocolo **TCP**
-- Railway te asignará un puerto externo (ej: `roundhouse.proxy.rlwy.net:XXXXX`)
+- Railway → **Settings → Networking → Add Port**
+- Puerto: `5222` → protocolo **TCP**
+- Railway asigna algo como: `maglev.proxy.rlwy.net:54674`
 
-### 4. Obtener host y puerto
-Tras el despliegue, en **Settings → Networking** verás algo como:
+---
+
+## Verificar que funciona
+
+En los **Logs** de Railway debes ver:
+
 ```
-roundhouse.proxy.rlwy.net:12345
+Ejabberd 24.02 is running
 ```
-Ese host y puerto son los que va en tu app.
+
+Y la primera vez también:
+```
+User admin@maglev.proxy.rlwy.net successfully registered
+```
 
 ---
 
@@ -48,8 +59,8 @@ Ese host y puerto son los que va en tu app.
 
 ### `local.properties`
 ```properties
-XMPP_HOST=roundhouse.proxy.rlwy.net
-XMPP_PORT=12345
+XMPP_HOST=maglev.proxy.rlwy.net
+XMPP_PORT=54674
 TURN_HOST=relay.metered.ca
 TURN_USER_DEBUG=tu_user_metered
 TURN_PASS_DEBUG=tu_pass_metered
@@ -69,20 +80,26 @@ val config = XMPPTCPConnectionConfiguration.builder()
 
 ---
 
-## Panel de administración
+## Agregar usuarios desde la Console de Railway
 
-El panel web está disponible en el puerto 5280 de Railway (HTTP):
+Ve a **Deployments → Deploy activo → Console** y ejecuta:
+
+```sh
+# Crear usuario
+bin/ejabberdctl register usuario maglev.proxy.rlwy.net password123
+
+# Ver todos los usuarios
+bin/ejabberdctl registered_users maglev.proxy.rlwy.net
+
+# Eliminar usuario
+bin/ejabberdctl unregister usuario maglev.proxy.rlwy.net
 ```
-http://<host-railway>:<puerto-5280>/admin
-```
-Usuario: `admin@<EJABBERD_DOMAIN>`  
-Contraseña: el valor de `EJABBERD_ADMIN_PASSWORD`
 
 ---
 
-## Notas importantes
+## Notas
 
-- ⚠️ **Solo para pruebas** — no uses datos reales de usuarios
+- ⚠️ Solo para pruebas, no uses datos reales
 - 🔒 Railway plan gratuito: 500 hrs/mes, 512 MB RAM
-- 📋 Registro abierto: cualquier usuario puede crear cuenta desde la app
-- 🔄 El servidor reinicia automáticamente si falla
+- 📋 Registro abierto desde la app via mod_register
+- 🔄 Reinicio automático si falla

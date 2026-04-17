@@ -4,7 +4,7 @@
 ###
 
 hosts:
-  - "localhost"  # Se sobreescribe en runtime con EJABBERD_DOMAIN
+  - "localhost"   # Railway sobreescribe esto via XMPP_DOMAIN env var del propio ecs
 
 loglevel: info
 
