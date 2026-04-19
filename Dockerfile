@@ -9,8 +9,6 @@ COPY entrypoint.sh /usr/local/bin/custom-entrypoint.sh
 USER root
 RUN chmod +x /usr/local/bin/custom-entrypoint.sh
 
-USER ejabberd
-
 EXPOSE 5222 5269 5280
 
 # Replace @HOST@ placeholders before ejabberd reads the config
