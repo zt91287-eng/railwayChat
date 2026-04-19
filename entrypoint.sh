@@ -9,7 +9,6 @@ sed -i "s/@HOST@/${DOMAIN}/g" /home/ejabberd/conf/ejabberd.yml
 
 echo "ejabberd: domain set to '${DOMAIN}'"
 
-# Hand off to the official ejabberd/ecs entrypoint. The sed above runs as
-# root (required to write the config file); the official entrypoint handles
-# dropping privileges to the ejabberd user internally.
-exec /usr/local/bin/docker-entrypoint.sh "$@"
+# Start ejabberd via tini (the init system used by ejabberd/ecs).
+# tini reaps zombie processes and forwards signals correctly inside containers.
+exec /sbin/tini -- /usr/sbin/ejabberd foreground
