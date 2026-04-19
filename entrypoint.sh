@@ -6,16 +6,14 @@ DOMAIN="${XMPP_DOMAIN:-localhost}"
 
 echo "[entrypoint] Dominio: ${DOMAIN}"
 
-# Reemplazar @HOST@ y localhost con el dominio real usando Python
-python3 -c "
-with open('${CONF}', 'r') as f:
-    content = f.read()
-content = content.replace('@HOST@', '${DOMAIN}')
-content = content.replace('localhost', '${DOMAIN}')
-with open('${CONF}', 'w') as f:
-    f.write(content)
-print('[entrypoint] ejabberd.yml actualizado con dominio: ${DOMAIN}')
-"
+# Reemplazar @HOST@ y localhost con el dominio real usando awk
+awk -v domain="$DOMAIN" '{
+    gsub(/@HOST@/, domain)
+    gsub(/localhost/, domain)
+    print
+}' "$CONF" > /tmp/ejabberd_new.yml && cp /tmp/ejabberd_new.yml "$CONF"
+
+echo "[entrypoint] ejabberd.yml actualizado ✅"
 
 # Arrancar ejabberd en segundo plano
 /usr/local/bin/ejabberdctl foreground &
