@@ -27,11 +27,13 @@ En Railway → pestaña **Variables**, agrega estas 3 variables:
 | Variable        | Ejemplo                                               | Descripción                              |
 |-----------------|-------------------------------------------------------|------------------------------------------|
 | `XMPP_DOMAIN`   | `maglev.proxy.rlwy.net`                               | Tu host TCP asignado por Railway         |
-| `CTL_ON_CREATE` | `register admin maglev.proxy.rlwy.net TuPass123`      | Crea el admin la primera vez que arranca |
+| `CTL_ON_CREATE` | `register admin $XMPP_DOMAIN TuPass123`               | Crea el admin la primera vez que arranca |
 | `CTL_ON_START`  | `status`                                              | Verifica que arrancó correctamente       |
 
 > ⚠️ `CTL_ON_CREATE` solo se ejecuta **la primera vez**.
-> Reemplaza `maglev.proxy.rlwy.net` y `TuPass123` con tus valores reales.
+> Usa `$XMPP_DOMAIN` en el valor para que el dominio coincida con el host configurado en ejabberd.
+> Si hardcodeas un dominio distinto al de `XMPP_DOMAIN`, ejabberd rechazará el registro con "Unknown virtual host".
+> Reemplaza `TuPass123` con tu contraseña real.
 
 ### 3. Exponer puerto TCP 5222
 - Railway → **Settings → Networking → Add Port**
@@ -86,13 +88,13 @@ Ve a **Deployments → Deploy activo → Console** y ejecuta:
 
 ```sh
 # Crear usuario
-bin/ejabberdctl register usuario maglev.proxy.rlwy.net password123
+bin/ejabberdctl register usuario $XMPP_DOMAIN password123
 
 # Ver todos los usuarios
-bin/ejabberdctl registered_users maglev.proxy.rlwy.net
+bin/ejabberdctl registered_users $XMPP_DOMAIN
 
 # Eliminar usuario
-bin/ejabberdctl unregister usuario maglev.proxy.rlwy.net
+bin/ejabberdctl unregister usuario $XMPP_DOMAIN
 ```
 
 ---
