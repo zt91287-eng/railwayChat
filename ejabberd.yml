@@ -4,7 +4,7 @@
 ###
 
 hosts:
-  - "localhost"   # Railway sobreescribe esto via XMPP_DOMAIN env var del propio ecs
+  - "@HOST@"   # Railway sobreescribe esto via XMPP_DOMAIN env var del propio ecs
 
 loglevel: info
 
@@ -63,7 +63,7 @@ auth_password_format: scram
 ###
 acl:
   admin:
-    user: admin@localhost
+    user: "admin@HOST@"
   local:
     user_regexp: ""
   loopback:
