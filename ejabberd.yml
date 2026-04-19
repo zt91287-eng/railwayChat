@@ -4,7 +4,7 @@
 ###
 
 hosts:
-  - "@HOST@"   # Railway sobreescribe esto via XMPP_DOMAIN env var del propio ecs
+  - "{{XMPP_DOMAIN}}"
 
 loglevel: info
 
@@ -63,7 +63,7 @@ auth_password_format: scram
 ###
 acl:
   admin:
-    user: "admin@HOST@"
+    user: "admin@{{XMPP_DOMAIN}}"
   local:
     user_regexp: ""
   loopback:
@@ -155,7 +155,7 @@ modules:
     request_activates_archiving: false
 
   mod_muc:                # salas de chat (XEP-0045)
-    host: conference.@HOST@
+    host: "conference.{{XMPP_DOMAIN}}"
     access:
       - allow
     access_admin:
