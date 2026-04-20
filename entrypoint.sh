@@ -1,42 +1,44 @@
 #!/bin/sh
 set -e
 
-# Default entrypoint for ejabberd/ecs image
-EJABBERD_ENTRYPOINT="/usr/local/bin/ejabberdctl"
-DEFAULT_ENTRYPOINT="/entrypoint.sh"
-
 ADMIN_USER="${EJABBERD_ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${EJABBERD_ADMIN_PASSWORD:-changeme}"
 XMPP_HOST="${XMPP_DOMAIN:-localhost}"
 
 FLAG_FILE="/home/ejabberd/conf/.admin_created"
 
-create_admin() {
-  echo "[init] Waiting for ejabberd to be ready..."
-  # Poll until ejabberd responds
-  until ejabberdctl status > /dev/null 2>&1; do
+# Spawn a completely independent background process that waits for ejabberd
+# and then registers the admin user. This process is detached from the main
+# ejabberd process — any failure here does NOT affect ejabberd.
+(
+  # Wait up to 120 s for ejabberd to accept commands
+  i=0
+  while [ $i -lt 60 ]; do
+    if ejabberdctl status > /dev/null 2>&1; then
+      break
+    fi
     sleep 2
+    i=$((i + 1))
   done
 
   if [ -f "$FLAG_FILE" ]; then
-    echo "[init] Admin user already created (flag file present), skipping."
-    return
+    echo "[init] Admin already created, skipping."
+    exit 0
   fi
 
-  echo "[init] Checking if admin@${XMPP_HOST} exists..."
   if ejabberdctl check_account "${ADMIN_USER}" "${XMPP_HOST}" > /dev/null 2>&1; then
-    echo "[init] Admin user already exists, skipping creation."
+    echo "[init] Admin user ${ADMIN_USER}@${XMPP_HOST} already exists."
   else
-    echo "[init] Creating admin user: ${ADMIN_USER}@${XMPP_HOST}"
-    ejabberdctl register "${ADMIN_USER}" "${XMPP_HOST}" "${ADMIN_PASSWORD}"
-    echo "[init] Admin user created successfully."
+    echo "[init] Registering admin user ${ADMIN_USER}@${XMPP_HOST}..."
+    ejabberdctl register "${ADMIN_USER}" "${XMPP_HOST}" "${ADMIN_PASSWORD}" \
+      && echo "[init] Admin user created." \
+      || echo "[init] WARNING: could not create admin user (non-fatal)."
   fi
 
-  touch "$FLAG_FILE"
-}
+  touch "$FLAG_FILE" 2>/dev/null || true
+) &
+# Disown the subshell so it is fully detached from this process
+disown 2>/dev/null || true
 
-# Run admin creation in the background after ejabberd starts
-create_admin &
-
-# Hand off to the image's default entrypoint
-exec "$DEFAULT_ENTRYPOINT" "$@"
+# Hand control to the image's original entrypoint — this becomes PID 1
+exec /entrypoint.sh "$@"
